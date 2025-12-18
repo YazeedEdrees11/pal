@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plagiarism Checker AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-dark: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            background-image:
+                radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
+                radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
+                radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .background-blobs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .blob {
+            position: absolute;
+            filter: blur(80px);
+            opacity: 0.6;
+            animation: float 10s infinite ease-in-out;
+        }
+
+        .blob-1 {
+            top: -10%;
+            left: -10%;
+            width: 500px;
+            height: 500px;
+            background: rgba(99, 102, 241, 0.3);
+            animation-delay: 0s;
+        }
+
+        .blob-2 {
+            bottom: -10%;
+            right: -10%;
+            width: 400px;
+            height: 400px;
+            background: rgba(236, 72, 153, 0.3);
+            animation-delay: 2s;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            50% {
+                transform: translate(20px, 40px);
+            }
+
+            100% {
+                transform: translate(0, 0);
+            }
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.02);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area:hover,
+        .upload-area.drag-over {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            transition: color 0.3s ease;
+        }
+
+        .upload-area:hover .upload-icon {
+            color: var(--primary);
+            transform: scale(1.1);
+        }
+
+        .file-info {
+            display: none;
+            margin-top: 20px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .file-name {
+            font-weight: 500;
+            color: #fff;
+            word-break: break-all;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 24px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loader {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #fff;
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: none;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .result-box {
+            margin-top: 24px;
+            padding: 20px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .status-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .status-success {
+            color: var(--success);
+        }
+
+        .status-error {
+            color: var(--error);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        /* Footer/Credit */
+        .footer {
+            text-align: center;
+            margin-top: 24px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <header>
+                <h1>Plagiarism Checker</h1>
+                <p class="subtitle">Upload your document to scan for originality.</p>
+            </header>
+
+            <div class="upload-area" id="dropZone">
+                <div class="upload-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                </div>
+                <h3>Drag & Drop file here</h3>
+                <p style="color: var(--text-muted); margin-top: 8px;">or click to browse</p>
+                <input type="file" id="fileInput" accept=".pdf,.txt,.docx">
+            </div>
+
+            <div class="file-info" id="fileInfo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                <span class="file-name" id="fileName">document.pdf</span>
+                <span style="margin-left: auto; cursor: pointer; color: var(--text-muted);"
+                    id="removeFile">&times;</span>
+            </div>
+
+            <button class="btn" id="checkBtn" disabled>
+                <span class="btn-text">Check Plagiarism</span>
+                <div class="loader"></div>
+            </button>
+
+            <div class="result-box" id="resultBox">
+                <!-- Results will be injected here -->
+            </div>
+        </div>
+        <div class="footer">
+            Powered by AI & Webhooks
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const removeFile = document.getElementById('removeFile');
+        const checkBtn = document.getElementById('checkBtn');
+        const btnText = document.querySelector('.btn-text');
+        const loader = document.querySelector('.loader');
+        const resultBox = document.getElementById('resultBox');
+
+        let selectedFile = null;
+        // Production Webhook URL (derived from previous test URL). 
+        // IMPORTANT: Ensure the workflow is ACTIVE in n8n for this to work.
+        const WEBHOOK_URL = 'https://n8n.devorise.com/webhook/6186ec5a-5a97-42e4-ab5c-14495e8a9f0c';
+
+        // Drag & Drop Handlers
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            selectedFile = file;
+            fileName.textContent = file.name;
+            fileInfo.style.display = 'flex';
+            dropZone.style.display = 'none';
+            checkBtn.disabled = false;
+            resultBox.style.display = 'none';
+        }
+
+        removeFile.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectedFile = null;
+            fileInput.value = '';
+            fileInfo.style.display = 'none';
+            dropZone.style.display = 'block';
+            checkBtn.disabled = true;
+            resultBox.style.display = 'none';
+        });
+
+        checkBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+            setLoading(true);
+            resultBox.style.display = 'none';
+
+            try {
+                console.log('Uploading file:', selectedFile.name, 'size:', selectedFile.size, 'bytes');
+
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                formData.append('fileName', selectedFile.name);
+                formData.append('fileExtension', selectedFile.name.split('.').pop()?.toLowerCase() || '');
+                formData.append('size', selectedFile.size.toString());
+                formData.append('mimeType', selectedFile.type || 'application/octet-stream');
+
+                const response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const contentType = response.headers.get('content-type') || '';
+                const payload = contentType.includes('application/json') ? await response.json() : await response.text();
+
+                if (!response.ok) {
+                    const errorText = typeof payload === 'string' ? payload : JSON.stringify(payload);
+                    throw new Error(`Server returned ${response.status} ${response.statusText}: ${errorText}`);
+                }
+
+                let displayMessage = '';
+                if (typeof payload === 'string') {
+                    displayMessage = payload;
+                } else if (payload.message) {
+                    displayMessage = payload.message;
+                } else if (payload.result) {
+                    displayMessage = typeof payload.result === 'string' ? payload.result : JSON.stringify(payload.result, null, 2);
+                } else {
+                    displayMessage = JSON.stringify(payload, null, 2);
+                }
+
+                showResult(true, "File sent", displayMessage || "File successfully sent for analysis.");
+
+            } catch (error) {
+                console.error('Upload Error:', error);
+
+                let errorDetails = error.message;
+                if (error.message.includes('Failed to fetch')) {
+                    errorDetails = 'Failed to reach the webhook. This could be due to:\n- Network connectivity issues\n- CORS restrictions on the webhook\n- Workflow not active or URL incorrect';
+                }
+
+                showResult(false, "Upload Failed", `Could not send file to the workflow.\n\nDetails: ${errorDetails}`);
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        function setLoading(isLoading) {
+            checkBtn.disabled = isLoading;
+            if (isLoading) {
+                btnText.style.display = 'none';
+                loader.style.display = 'block';
+                resultBox.style.display = 'none';
+            } else {
+                btnText.style.display = 'block';
+                loader.style.display = 'none';
+            }
+        }
+
+        function showResult(success, title, message) {
+            resultBox.style.display = 'block';
+            const icon = success ?
+                `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>` :
+                `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+
+            const colorClass = success ? 'status-success' : 'status-error';
+
+            resultBox.innerHTML = `
+                <div class="status-header ${colorClass}">
+                    ${icon}
+                    <span>${title}</span>
+                </div>
+                <div style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">${message}</div>
+            `;
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,403 @@
+{
+  "name": "palagiarism",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "6186ec5a-5a97-42e4-ab5c-14495e8a9f0c",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -336,
+        688
+      ],
+      "id": "5e5982a4-cd01-40da-8ea3-4781c9ac7040",
+      "name": "Webhook",
+      "webhookId": "6186ec5a-5a97-42e4-ab5c-14495e8a9f0c"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1280,
+        688
+      ],
+      "id": "72a647e5-11b8-4d7f-899e-8d29ff523e64",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "response-data",
+              "name": "response",
+              "value": "={{ { message: \"Plagiarism check completed\", summary: $json.text, score: $json.result?.score } }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {
+          "ignoreConversionErrors": true
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1050,
+        688
+      ],
+      "id": "prepare-response",
+      "name": "Prepare Response",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {
+          "encoding": "utf8"
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        112,
+        768
+      ],
+      "id": "6114347f-9239-40b2-ad90-06659adc4160",
+      "name": "Extract from txt1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        112,
+        608
+      ],
+      "id": "4b954578-b522-493d-963d-18f021479c19",
+      "name": "Extract from pdf1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f57f66bd-689d-480b-be52-83f32c2c017b",
+              "leftValue": "={{ $json.fileExtension }}",
+              "rightValue": "pdf",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -96,
+        688
+      ],
+      "id": "56f2070d-d76d-4350-a176-517100e6ec03",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.gowinston.ai/v2/plagiarism",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer xiLdauJ2BCPWQJu8xHShMxW9GCsbHoRTmmCxsW5ged527f36"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "=text",
+              "value": "={{ $json.The_text }}"
+            },
+            {
+              "name": "version",
+              "value": "4.11"
+            },
+            {
+              "name": "sentences",
+              "value": "false"
+            },
+            {
+              "name": "language",
+              "value": "auto"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        576,
+        688
+      ],
+      "id": "223e546b-075c-4930-b96f-7190fbf34129",
+      "name": "HTTP Request",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e5671b12-b392-444a-834b-8f059202cc8a",
+              "name": "The_text",
+              "value": "={{ $json.data }}{{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "ignoreConversionErrors": true
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        352,
+        688
+      ],
+      "id": "17a05752-595a-48bf-9df2-77a9f28aada9",
+      "name": "Edit Fields1",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "focus on system message",
+        "options": {
+          "systemMessage": "=can you give me a summary about plagiarism off this returned data from the api \n score :{{ $json.result.score }} \nsource count: {{ $json.result.sourceCounts }}\ntext word count :{{ $json.result.textWordCounts }}\ntotal palagiarism :{{ $json.result.totalPlagiarismWords }}\nidentical word count : {{ $json.result.identicalWordCounts }}\nsimilar word counts :{{ $json.result.similarWordCounts }}\n\nthe text is {{ $json.text }}\n\nthe output must be only the summary and the text only to sent it via email"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        800,
+        688
+      ],
+      "id": "d4236548-eab0-408d-bdf9-e702ab518f87",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        768,
+        912
+      ],
+      "id": "89036e08-d50b-4010-86f8-f3e69c02e353",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "bEJpqoEjLwTLG3At",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "Palagiarism Data"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        576
+      ],
+      "id": "284c75fd-9a3e-41b2-b7d3-cab64c7a6579",
+      "name": "Create a row1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "nUVUHAgU7GmFj2iM",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from txt1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from pdf1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Extract from pdf1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from txt1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Create a row1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prepare Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "Create a row1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "2dc2d5de-23c3-43a8-a98b-34b04e9f23e8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7654c5011a28b0c2879b09ced8faafe2981c07e71cd5e2c4309309710660a66c"
+  },
+  "id": "xBhNcRT0EH7Efvxr",
+  "tags": []
+}
